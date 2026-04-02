@@ -1,38 +1,58 @@
-// Jenkinsfile (Declarative Pipeline)
 pipeline {
-    agent any // Chạy trên bất kỳ agent nào có sẵn
-
+    agent any
+    
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
-                echo '✅ Đã lấy code từ GitHub.'
+                echo 'Checking out source code...'
+                // git 'https://github.com/your-repo.git'
             }
         }
         stage('Build') {
             steps {
-                echo '🚀 Đang build...'
-                // Thêm lệnh build thực tế của bạn ở đây
-                sh 'echo "Build thành công"'
+                echo 'Building application...'
+                // sh 'mvn clean compile' hoặc tương đương
             }
         }
         stage('Test') {
             steps {
-                echo '🧪 Đang chạy tests...'
-                // Thêm lệnh test thực tế của bạn ở đây
-                sh 'echo "Tất cả tests passed"'
+                echo 'Running tests...'
+                // sh 'mvn test'
             }
         }
     }
+    
     post {
         always {
-            echo 'Pipeline đã kết thúc.'
+            echo 'Pipeline hoàn tất - đây là bước luôn chạy dù thành công hay thất bại'
         }
         success {
-            echo '🎉 Pipeline thành công!'
+            echo 'Build thành công!'
+            emailext (
+                subject: "✅ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build ${env.BUILD_NUMBER} của job ${env.JOB_NAME} đã thành công.",
+                to: 'dev-team@yourcompany.com'
+            )
         }
         failure {
-            echo '❌ Pipeline thất bại.'
+            echo 'Build thất bại!'
+            emailext (
+                subject: "🚨 BUILD FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build ${env.BUILD_NUMBER} của job ${env.JOB_NAME} đã thất bại. Vui lòng kiểm tra: ${env.BUILD_URL}",
+                to: 'dev-team@yourcompany.com, qa-team@yourcompany.com',
+                attachLog: true
+            )
+        }
+        unstable {
+            echo 'Build không ổn định!'
+            emailext (
+                subject: "⚠️ BUILD UNSTABLE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build ${env.BUILD_NUMBER} của job ${env.JOB_NAME} không ổn định.",
+                to: 'dev-team@yourcompany.com'
+            )
+        }
+        changed {
+            echo 'Trạng thái build đã thay đổi so với lần trước!'
         }
     }
 }
